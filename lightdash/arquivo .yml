@@ -1,0 +1,5 @@
+models:
+  - name: my_model
+    columns:
+      - name: my_column_1
+      - name: my_column_2
