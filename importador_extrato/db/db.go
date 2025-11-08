@@ -15,6 +15,16 @@ type DB struct {
 	*sqlx.DB
 }
 
+func (db *DB) GetContaIDByNumero(numero string) (string, error) {
+	query := `SELECT id FROM financeiro.contas WHERE numero = $1 AND ativo = true`
+	var id string
+	err := db.Get(&id, query, numero)
+	if err != nil {
+		return "", fmt.Errorf("error finding active conta by numero: %v", err)
+	}
+	return id, nil
+}
+
 func NewConnection(connectionString string) (*DB, error) {
 	db, err := sqlx.Connect("postgres", connectionString)
 	if err != nil {
@@ -59,18 +69,39 @@ func (db *DB) InsertTransaction(contaID string, date time.Time, description, det
 		Fingerprint:   fingerprint,
 	}
 
+	// Check if transaction already exists
+	existsQuery := `
+SELECT EXISTS(
+  SELECT 1 FROM financeiro.transacoes 
+  WHERE conta_id = $1 
+  AND data = $2 
+  AND titulo = $3 
+  AND descricao = $4 
+  AND valor = $5
+)
+`
+	var exists bool
+	existsErr := db.QueryRow(existsQuery, contaID, date, description, details, amount).Scan(&exists)
+	if existsErr != nil {
+		return fmt.Errorf("error checking for existing transaction: %v", existsErr)
+	}
+
+	if exists {
+		return nil // Skip duplicate transaction
+	}
+
 	// Insert into database
 	query := `
-		INSERT INTO financeiro.transacoes (
-			id, conta_id, data, titulo, descricao,
-			tipo_operacao, tipo_transacao, valor,
-			criado_em, atualizado_em, fingerprint
-		) VALUES (
-			:id, :conta_id, :data, :titulo, :descricao,
-			:tipo_operacao, :tipo_transacao, :valor,
-			:criado_em, :atualizado_em, :fingerprint
-		)
-	`
+INSERT INTO financeiro.transacoes (
+id, conta_id, data, titulo, descricao,
+tipo_operacao, tipo_transacao, valor,
+criado_em, atualizado_em, fingerprint
+) VALUES (
+:id, :conta_id, :data, :titulo, :descricao,
+:tipo_operacao, :tipo_transacao, :valor,
+:criado_em, :atualizado_em, :fingerprint
+)
+`
 
 	_, err := db.NamedExec(query, tx)
 	if err != nil {

@@ -12,11 +12,6 @@ import (
 	"github.com/gabsdotdev/wgtradepromo-backend/importador_extrato/parser"
 )
 
-const (
-	// Account ID for W & G PROMOCOES E EVENTOS Inter account
-	contaID = "019a5259-c655-7532-bb1b-d2635394e0e4"
-)
-
 func main() {
 	// Load configuration
 	cfg, err := config.LoadConfig()
@@ -45,8 +40,14 @@ func main() {
 		log.Fatal("Account number must be informed in the CSV (field Conta).")
 	}
 
+	// Get conta ID from database
+	contaID, err := database.GetContaIDByNumero(stmt.AccountNumber)
+	if err != nil {
+		log.Fatalf("Error finding conta ID: %v", err)
+	}
+
 	// Import transactions
-	fmt.Printf("Importing %d transactions...\n", len(stmt.Transactions))
+	fmt.Printf("Importing %d transactions for conta %s...\n", len(stmt.Transactions), stmt.AccountNumber)
 
 	var importedCount, skippedCount int
 
