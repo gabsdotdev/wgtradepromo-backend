@@ -58,7 +58,8 @@ CREATE TABLE financeiro.transacoes (
   valor             NUMERIC(14,2) NOT NULL CHECK (valor > 0),
 
   criado_em         TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  atualizado_em     TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  atualizado_em     TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  fingerprint       CHAR(64) NOT NULL
 );
 
 CREATE INDEX ix_transacoes_conta          ON financeiro.transacoes (conta_id);
