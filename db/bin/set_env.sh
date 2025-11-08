@@ -6,14 +6,50 @@ if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
   exit 1
 fi
 
-export DB_NAME=""
-export DB_USER=""
-export DB_PASS=""
-export DB_PORT=""
-export DB_HOST=""
+PROFILE="${1:-local}"
+ENV_FILE=".env.${PROFILE}.db"
+EXAMPLE_FILE=".env.example.db"
+GITIGNORE_FILE=".gitignore"
+
+if [[ ! -f "$ENV_FILE" ]]; then
+  if [[ -f "$EXAMPLE_FILE" ]]; then
+    cp -f "$EXAMPLE_FILE" "$ENV_FILE"
+    echo "⚠️  Arquivo '$ENV_FILE' não existia e foi criado a partir de '$EXAMPLE_FILE'."
+    echo "📝  Edite '$ENV_FILE' e preencha as variáveis antes de rodar novamente:"
+    echo "    source set_env.sh ${PROFILE}"
+    
+    if [[ -f "$GITIGNORE_FILE" ]]; then
+      if ! grep -Fxq "$ENV_FILE" "$GITIGNORE_FILE"; then
+        echo "" >> "$GITIGNORE_FILE"
+        echo "$ENV_FILE" >> "$GITIGNORE_FILE"
+        echo "📁  Linha adicionada ao .gitignore: $ENV_FILE"
+      fi
+    else
+      echo "$ENV_FILE" > "$GITIGNORE_FILE"
+      echo "📁  Criado novo .gitignore com entrada: $ENV_FILE"
+    fi
+
+    return 1
+  else
+    echo "❌ Arquivo de exemplo '$EXAMPLE_FILE' não encontrado."
+    echo "   Crie manualmente '$ENV_FILE' com este modelo:"
+    cat <<'EOF'
+DB_NAME="__DB_NAME__"
+DB_USER="__DB_USER__"
+DB_PASS="__DB_PASS__"
+DB_PORT="5432"
+DB_HOST="__DB_HOST__"
+EOF
+    return 1
+  fi
+fi
+
+set -a
+source "$ENV_FILE"
+set +a
 
 # Variáveis obrigatórias
-req=(DB_NAME DB_USER DB_PASS DB_PORT DB_HOST)
+req=(DB_NAME DB_USER DB_PASS DB_PORT)
 
 # Validação compacta
 fail=0
