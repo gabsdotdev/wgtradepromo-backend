@@ -26,7 +26,7 @@ func main() {
 	defer database.Close()
 
 	// List all CSV files in the current directory
-	files, err := filepath.Glob("./*.csv")
+	files, err := filepath.Glob("./rawdata/*.csv")
 	if err != nil {
 		log.Fatalf("Error listing CSV files: %v", err)
 	}
