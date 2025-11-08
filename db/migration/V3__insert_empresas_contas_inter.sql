@@ -6,12 +6,12 @@
 -- precisamos recuperar os UUIDs das empresas recém-criadas.
 
 WITH empresa_wg_trade AS (
-    SELECT id FROM empresas WHERE cnpj = '33722929000183'
+    SELECT id FROM cadastros.empresas WHERE cnpj = '33722929000183'
 ),
 empresa_wg_promo AS (
-    SELECT id FROM empresas WHERE cnpj = '23756078000136'
+    SELECT id FROM cadastros.empresas WHERE cnpj = '23756078000136'
 )
-INSERT INTO contas (
+INSERT INTO financeiro.contas (
     id, empresa_id, banco, agencia, numero, nome,
     saldo_inicial, ativo, criado_em, atualizado_em
 )

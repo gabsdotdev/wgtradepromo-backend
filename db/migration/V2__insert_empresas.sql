@@ -1,8 +1,8 @@
 -- =========================================================
--- Inserção de empresas
+-- Inserção de cadastros.empresas
 -- =========================================================
 
-INSERT INTO empresas (
+INSERT INTO cadastros.empresas (
     id,
     nome,
     cnpj,
