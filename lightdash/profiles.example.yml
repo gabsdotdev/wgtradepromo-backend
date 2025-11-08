@@ -1,0 +1,12 @@
+lightdash_project:
+  target: prod
+  outputs:
+    dev:
+      type: postgres
+      host: __HOST__PLACEHOLDER__
+      user: __USER__PLACEHOLDER__
+      password: __PASSWORD__PLACEHOLDER__
+      port: 5532
+      dbname: __DBNAME__PLACEHOLDER__
+      schema: __SCHEMA__PLACEHOLDER__
+      sslmode: disable

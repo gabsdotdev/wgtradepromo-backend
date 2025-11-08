@@ -1,0 +1,11 @@
+name: lightdash_project
+version: 1.0.0
+config-version: 2
+
+profile: lightdash_project
+
+model-paths: ["models"]
+
+models:
+  lightdash_project:
+    +materialized: view
