@@ -1,0 +1,68 @@
+version: 2
+
+sources:
+  - name: cadastros
+    schema: cadastros
+    tables:
+      - name: empresas
+        description: "Cadastro de empresas."
+        columns:
+          - name: id
+            tests:
+              - not_null
+              - unique
+          - name: nome
+            tests:
+              - not_null
+          - name: cnpj
+            tests:
+              - not_null
+              - unique
+
+  - name: financeiro
+    schema: financeiro
+    tables:
+      - name: contas
+        description: "Contas bancárias das empresas."
+        columns:
+          - name: id
+            tests:
+              - not_null
+              - unique
+          - name: empresa_id
+            tests:
+              - not_null
+              - relationships:
+                  to: source('cadastros', 'empresas')
+                  field: id
+          - name: banco
+            tests:
+              - not_null
+          - name: nome
+            tests:
+              - not_null
+
+      - name: transacoes
+        description: "Transações financeiras (crédito/débito)."
+        columns:
+          - name: id
+            tests:
+              - not_null
+              - unique
+          - name: conta_id
+            tests:
+              - not_null
+              - relationships:
+                  to: source('financeiro', 'contas')
+                  field: id
+          - name: data
+            tests:
+              - not_null
+          - name: tipo_operacao
+            tests:
+              - not_null
+              - accepted_values:
+                  values: ['credito', 'debito']
+          - name: valor
+            tests:
+              - not_null

@@ -1,0 +1,108 @@
+version: 2
+
+models:
+  - name: fct_transacoes
+    description: "Fato de transações com empresa/conta e valor com sinal."
+    columns:
+      - name: id
+        description: "Primary key"
+        tests:
+          - unique
+          - not_null
+
+    meta:
+      label: "Transações Financeiras"
+      lightdash:
+        type: "explore"
+
+    dimensions:
+      id:
+        type: string
+        sql: ${TABLE}.id
+        label: "ID"
+        description: "Identificador único da transação"
+
+      empresa_id:
+        type: string
+        sql: ${TABLE}.empresa_id
+        label: "ID da Empresa"
+
+      empresa:
+        type: string
+        sql: ${TABLE}.empresa
+        label: "Empresa"
+
+      conta_id:
+        type: string
+        sql: ${TABLE}.conta_id
+        label: "ID da Conta"
+
+      conta:
+        type: string
+        sql: ${TABLE}.conta
+        label: "Conta"
+
+      data:
+        type: date
+        sql: ${TABLE}.data
+        label: "Data"
+
+      mes_key:
+        type: date
+        sql: DATE_TRUNC('month', ${TABLE}.data)
+        label: "Mês (Data)"
+
+      mes_ano:
+        type: string
+        sql: TO_CHAR(DATE_TRUNC('month', ${TABLE}.data), 'YYYY-MM')
+        label: "Mês/Ano"
+
+      tipo_operacao:
+        type: string
+        sql: ${TABLE}.tipo_operacao
+        label: "Tipo de Operação"
+
+      tipo_transacao:
+        type: string
+        sql: ${TABLE}.tipo_transacao
+        label: "Tipo de Transação"
+
+      titulo:
+        type: string
+        sql: ${TABLE}.titulo
+        label: "Título"
+
+      descricao:
+        type: string
+        sql: ${TABLE}.descricao
+        label: "Descrição"
+
+      valor:
+        type: number
+        sql: ${TABLE}.valor
+        label: "Valor"
+
+      valor_signed:
+        type: number
+        sql: ${TABLE}.valor_signed
+        label: "Valor com Sinal"
+
+    metrics:
+      total_creditos:
+        type: sum
+        sql: CASE WHEN ${tipo_operacao} = 'credito' THEN ${valor} ELSE 0 END
+        label: "Total de Créditos"
+
+      total_debitos:
+        type: sum
+        sql: CASE WHEN ${tipo_operacao} = 'debito' THEN ${valor} ELSE 0 END
+        label: "Total de Débitos"
+
+      saldo_liquido:
+        type: sum
+        sql: CASE
+               WHEN ${tipo_operacao} = 'credito' THEN ${valor}
+               WHEN ${tipo_operacao} = 'debito'  THEN -${valor}
+               ELSE 0
+             END
+        label: "Saldo Líquido"

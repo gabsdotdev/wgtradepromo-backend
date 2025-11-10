@@ -1,0 +1,137 @@
+version: 2
+
+charts:
+  # 1) Créditos vs Débitos por Mês
+  - name: "Créditos vs Débitos por Mês"
+    description: "Comparativo mensal de entradas (créditos) e saídas (débitos)."
+    table_name: fct_transacoes
+    chart_kind: column
+    config:
+      x_field: mes_key
+      x_label: "Mês"
+      series:
+        - field: total_creditos
+          label: "Créditos"
+        - field: total_debitos
+          label: "Débitos"
+      sorts:
+        - field: mes_key
+          descending: false
+    dimensions:
+      - mes_key
+    metrics:
+      - total_creditos
+    additional_metrics:
+      - total_debitos
+
+  # 2) Saldo Líquido por Mês (linha)
+  - name: "Saldo Líquido por Mês"
+    description: "Resultado líquido mensal (créditos - débitos)."
+    table_name: fct_transacoes
+    chart_kind: line
+    config:
+      x_field: mes_key
+      series:
+        - field: saldo_liquido
+          label: "Saldo Líquido"
+      sorts:
+        - field: mes_key
+          descending: false
+    dimensions:
+      - mes_key
+    metrics:
+      - saldo_liquido
+
+  # 3) Receitas por Empresa (últimos 12 meses)
+  - name: "Receitas por Empresa (12m)"
+    description: "Total de créditos por empresa (últimos 12 meses)."
+    table_name: fct_transacoes
+    chart_kind: bar
+    config:
+      x_field: empresa
+      series:
+        - field: total_creditos
+          label: "Créditos"
+      sorts:
+        - field: total_creditos
+          descending: true
+    dimensions:
+      - empresa
+    metrics:
+      - total_creditos
+    filters:
+      - field: mes_key
+        operator: in_date_range
+        values: ["12 months"]
+
+  # 4) Top Pagadores de Pizza por Mês (ranking)
+  - name: "Top Pagadores - Pizza (Mensal)"
+    description: "Maiores créditos por descrição contendo 'Pizza', por mês."
+    table_name: fct_transacoes
+    chart_kind: table
+    config:
+      sorts:
+        - field: total_creditos
+          descending: true
+      limit: 5
+    dimensions:
+      - mes_key
+      - descricao
+    metrics:
+      - total_creditos
+    filters:
+      - field: tipo_operacao
+        operator: equals
+        values: ["credito"]
+      - field: descricao
+        operator: contains
+        values: ["Pizza"]
+
+  # 5) Distribuição de Débitos por Tipo de Transação (pizza)
+  - name: "Distribuição de Débitos por Tipo de Transação"
+    description: "Participação dos débitos por tipo_transacao."
+    table_name: fct_transacoes
+    chart_kind: pie
+    config:
+      series:
+        - field: pagamentos
+          label: "Débitos"
+    dimensions:
+      - tipo_transacao
+    metrics:
+      - pagamentos
+    filters:
+      - field: tipo_operacao
+        operator: equals
+        values: ["debito"]
+
+  # 6) Tabela Detalhada com filtros
+  - name: "Transações Detalhadas"
+    description: "Tabela para drill-down com filtros por período/empresa."
+    table_name: fct_transacoes
+    chart_kind: table
+    config:
+      columns:
+        - data
+        - empresa
+        - conta
+        - tipo_operacao
+        - tipo_transacao
+        - titulo
+        - descricao
+        - valor
+        - valor_signed
+      sorts:
+        - field: data
+          descending: true
+    dimensions:
+      - data
+      - empresa
+      - conta
+      - tipo_operacao
+      - tipo_transacao
+      - titulo
+      - descricao
+    metrics:
+      - valor
+      - valor_signed
