@@ -1,9 +1,35 @@
+---
 version: 2
 
+# Anchors para configurações comuns
+x-sort: &default-mes-sort
+  sorts:
+    - field: mes_key
+      descending: false
+
+x-filter-period: &filter-12-months
+  filters:
+    - field: mes_key
+      operator: in_date_range
+      values: ["12 months"]
+
+x-filter-credito: &filter-credito
+  filters:
+    - field: tipo_operacao
+      operator: equals
+      values: ["credito"]
+
+x-filter-debito: &filter-debito
+  filters:
+    - field: tipo_operacao
+      operator: equals
+      values: ["debito"]
+
 charts:
-  # 1) Créditos vs Débitos por Mês
+  # 1) Créditos vs Débitos por Mês - Visão Comparativa
   - name: "Créditos vs Débitos por Mês"
-    description: "Comparativo mensal de entradas (créditos) e saídas (débitos)."
+    description: >-
+      Comparativo mensal de entradas (créditos) e saídas (débitos).
     table_name: fct_transacoes
     chart_kind: column
     config:
@@ -14,19 +40,17 @@ charts:
           label: "Créditos"
         - field: total_debitos
           label: "Débitos"
-      sorts:
-        - field: mes_key
-          descending: false
+      <<: *default-mes-sort
     dimensions:
       - mes_key
     metrics:
       - total_creditos
-    additional_metrics:
       - total_debitos
 
-  # 2) Saldo Líquido por Mês (linha)
+  # 2) Evolução do Saldo Líquido
   - name: "Saldo Líquido por Mês"
-    description: "Resultado líquido mensal (créditos - débitos)."
+    description: >-
+      Evolução do resultado líquido mensal (créditos - débitos).
     table_name: fct_transacoes
     chart_kind: line
     config:
@@ -34,17 +58,16 @@ charts:
       series:
         - field: saldo_liquido
           label: "Saldo Líquido"
-      sorts:
-        - field: mes_key
-          descending: false
+      <<: *default-mes-sort
     dimensions:
       - mes_key
     metrics:
       - saldo_liquido
 
-  # 3) Receitas por Empresa (últimos 12 meses)
+  # 3) Análise de Receitas por Empresa
   - name: "Receitas por Empresa (12m)"
-    description: "Total de créditos por empresa (últimos 12 meses)."
+    description: >-
+      Distribuição de créditos por empresa nos últimos 12 meses.
     table_name: fct_transacoes
     chart_kind: bar
     config:
@@ -59,14 +82,12 @@ charts:
       - empresa
     metrics:
       - total_creditos
-    filters:
-      - field: mes_key
-        operator: in_date_range
-        values: ["12 months"]
+    <<: *filter-12-months
 
-  # 4) Top Pagadores de Pizza por Mês (ranking)
+  # 4) Ranking de Pagamentos de Pizza
   - name: "Top Pagadores - Pizza (Mensal)"
-    description: "Maiores créditos por descrição contendo 'Pizza', por mês."
+    description: >-
+      Ranking dos maiores pagamentos relacionados a Pizza por mês.
     table_name: fct_transacoes
     chart_kind: table
     config:
@@ -80,16 +101,15 @@ charts:
     metrics:
       - total_creditos
     filters:
-      - field: tipo_operacao
-        operator: equals
-        values: ["credito"]
       - field: descricao
         operator: contains
         values: ["Pizza"]
+    <<: *filter-credito
 
-  # 5) Distribuição de Débitos por Tipo de Transação (pizza)
+  # 5) Distribuição de Despesas por Tipo
   - name: "Distribuição de Débitos por Tipo de Transação"
-    description: "Participação dos débitos por tipo_transacao."
+    description: >-
+      Análise da composição de débitos por categoria de transação.
     table_name: fct_transacoes
     chart_kind: pie
     config:
@@ -100,14 +120,12 @@ charts:
       - tipo_transacao
     metrics:
       - pagamentos
-    filters:
-      - field: tipo_operacao
-        operator: equals
-        values: ["debito"]
+    <<: *filter-debito
 
-  # 6) Tabela Detalhada com filtros
+  # 6) Detalhamento de Transações
   - name: "Transações Detalhadas"
-    description: "Tabela para drill-down com filtros por período/empresa."
+    description: >-
+      Visualização detalhada de todas as transações com filtros.
     table_name: fct_transacoes
     chart_kind: table
     config:

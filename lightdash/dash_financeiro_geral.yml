@@ -1,60 +1,68 @@
+---
 version: 2
+
+# Anchors para filtros comuns
+x-filters: &default-filters
+  filters:
+    - field: mes_key
+      operator: in_date_range
+      values: ["12 months"]
+    - field: empresa
+      operator: is_any_of
+      values: []     # vazio = todas
+    - field: tipo_operacao
+      operator: is_any_of
+      values: ["credito", "debito"]
 
 dashboards:
   - name: "Financeiro — Visão Geral"
-    description: "Resumo de receitas, despesas e saldo com drill-down por empresa e período."
+    description: >-
+      Dashboard financeiro com análises de receitas, despesas e resultados.
     tiles:
+      # KPIs e Gráficos Principais
       - title: "Créditos vs Débitos por Mês"
         chart_name: "Créditos vs Débitos por Mês"
         col: 0
         row: 0
-        width: 12
-        height: 8
+        width: 8    # Reduzido para dar espaço ao saldo
+        height: 6
 
       - title: "Saldo Líquido por Mês"
         chart_name: "Saldo Líquido por Mês"
-        col: 0
-        row: 8
-        width: 12
+        col: 8      # Posicionado ao lado do gráfico principal
+        row: 0
+        width: 4    # Menor largura para visualização compacta
         height: 6
 
+      # Análises Secundárias (Segunda Linha)
       - title: "Receitas por Empresa (12m)"
         chart_name: "Receitas por Empresa (12m)"
         col: 0
-        row: 14
+        row: 6
         width: 6
-        height: 8
+        height: 6
 
       - title: "Distribuição de Débitos por Tipo"
         chart_name: "Distribuição de Débitos por Tipo de Transação"
         col: 6
-        row: 14
+        row: 6
         width: 6
-        height: 8
+        height: 6
 
+      # Análises Específicas (Terceira Linha)
       - title: "Top Pagadores - Pizza (Mensal)"
         chart_name: "Top Pagadores - Pizza (Mensal)"
         col: 0
-        row: 22
+        row: 12
         width: 12
-        height: 8
+        height: 6
 
+      # Detalhamento (Última Linha)
       - title: "Transações Detalhadas"
         chart_name: "Transações Detalhadas"
         col: 0
-        row: 30
+        row: 18
         width: 12
-        height: 10
+        height: 8
 
-    filters:
-      - field: mes_key
-        operator: in_date_range
-        values: ["12 months"]
-
-      - field: empresa
-        operator: is_any_of
-        values: []     # vazio = todas
-
-      - field: tipo_operacao
-        operator: is_any_of
-        values: ["credito","debito"]
+    <<: *default-filters
