@@ -1,9 +1,10 @@
 module github.com/gabsdotdev/wgtradepromo-backend/importador_extrato
 
-go 1.23.1
+go 1.24.1
 
 require (
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/jmoiron/sqlx v1.4.0 // indirect
+	github.com/ledongthuc/pdf v0.0.0-20250511090121-5959a4027728 // indirect
 	github.com/lib/pq v1.10.9 // indirect
 )

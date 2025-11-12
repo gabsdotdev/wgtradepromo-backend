@@ -15,6 +15,16 @@ type DB struct {
 	*sqlx.DB
 }
 
+func (db *DB) GetEmpresaIDByCNPJ(CNPJ string) (string, error) {
+	query := `SELECT id FROM cadastros.empresas WHERE cnpj = $1 AND ativa = true`
+	var id string
+	err := db.Get(&id, query, CNPJ)
+	if err != nil {
+		return "", fmt.Errorf("error finding active empresa by cnpj: %v", err)
+	}
+	return id, nil
+}
+
 func (db *DB) GetContaIDByNumero(numero string) (string, error) {
 	query := `SELECT id FROM financeiro.contas WHERE numero = $1 AND ativo = true`
 	var id string
@@ -139,4 +149,59 @@ func getTipoTransacao(description string) string {
 
 func contains(s, substr string) bool {
 	return len(s) >= len(substr) && s[:len(substr)] == substr
+}
+
+func (db *DB) InsertDasDocumento(empresaID string, periodoApuracao time.Time, dataVencimento time.Time, numeroDocumento string, valorTotal float64) error {
+	// Generate UUID v7 for the transaction
+	id := uuid.Must(uuid.NewV7())
+
+	now := time.Now()
+
+	// Create transaction record
+	tx := &models.DasDocumento{
+		ID:              id.String(),
+		EmpresaID:       empresaID,
+		PeriodoApuracao: periodoApuracao,
+		DataVencimento:  dataVencimento,
+		NumeroDocumento: numeroDocumento,
+		ValorTotal:      valorTotal,
+		CriadoEm:        now,
+		AtualizadoEm:    now,
+	}
+
+	// Check if transaction already exists
+	existsQuery := `
+SELECT EXISTS(
+  SELECT 1 FROM financeiro.das_documentos 
+  WHERE empresa_id = $1 
+  AND numero_documento = $2 
+)
+`
+	var exists bool
+	existsErr := db.QueryRow(existsQuery, empresaID, numeroDocumento).Scan(&exists)
+	if existsErr != nil {
+		return fmt.Errorf("error checking for existing das documento: %v", existsErr)
+	}
+
+	if exists {
+		return nil // Skip duplicate transaction
+	}
+
+	// Insert into database
+	query := `
+INSERT INTO financeiro.das_documentos (
+id, empresa_id, periodo_apuracao, data_vencimento, numero_documento, valor_total,
+criado_em, atualizado_em
+) VALUES (
+:id, :empresa_id, :periodo_apuracao, :data_vencimento, :numero_documento, :valor_total,
+:criado_em, :atualizado_em
+)
+`
+
+	_, err := db.NamedExec(query, tx)
+	if err != nil {
+		return fmt.Errorf("error inserting transaction: %v", err)
+	}
+
+	return nil
 }

@@ -37,6 +37,9 @@ go.work.sum
 # CSV data files
 *.csv
 
+# PDF data files
+*.pdf
+
 # Misc binary files
 *.bin
 *.binary
