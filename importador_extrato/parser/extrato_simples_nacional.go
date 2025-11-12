@@ -2,6 +2,7 @@ package parser
 
 import (
 	"fmt"
+	"os"
 	"path/filepath"
 	"regexp"
 	"strings"
@@ -9,23 +10,23 @@ import (
 	"github.com/ledongthuc/pdf"
 )
 
-// DasSimplesNacionalParser é o parser para documentos DAS do Simples Nacional em formato PDF
-type DasSimplesNacionalParser struct {
+// ExtratoSimplesNacionalParser é o parser para documentos DAS do Simples Nacional em formato PDF
+type ExtratoSimplesNacionalParser struct {
 	parser *FiscalParser
 }
 
-// NewDasSimplesNacionalParser cria uma nova instância do parser do Simples Nacional
-func NewDasSimplesNacionalParser() *DasSimplesNacionalParser {
-	return &DasSimplesNacionalParser{parser: NewFiscalParser()}
+// NewExtratoSimplesNacionalParser cria uma nova instância do parser do Simples Nacional
+func NewExtratoSimplesNacionalParser() *ExtratoSimplesNacionalParser {
+	return &ExtratoSimplesNacionalParser{parser: NewFiscalParser()}
 }
 
 // GetName retorna o nome do parser
-func (p *DasSimplesNacionalParser) GetName() string {
-	return "Das Simples Nacional"
+func (p *ExtratoSimplesNacionalParser) GetName() string {
+	return "Extrato Simples Nacional"
 }
 
 // CanParse verifica se o arquivo pode ser processado por este parser
-func (p *DasSimplesNacionalParser) CanParse(filename string) bool {
+func (p *ExtratoSimplesNacionalParser) CanParse(filename string) bool {
 	// Verifica se o arquivo está na pasta simples_nacional e é um PDF
 	ext := strings.ToLower(filepath.Ext(filename))
 	if ext != ".pdf" {
@@ -33,11 +34,11 @@ func (p *DasSimplesNacionalParser) CanParse(filename string) bool {
 	}
 
 	// Verifica se está na pasta simples_nacional
-	return strings.Contains(filepath.ToSlash(filename), "/extrato/das/")
+	return strings.Contains(filepath.ToSlash(filename), "/extrato/extrato_simples_nacional/")
 }
 
 // Parse processa um arquivo PDF do Simples Nacional (DAS)
-func (p *DasSimplesNacionalParser) Parse(filename string) (*Statement, error) {
+func (p *ExtratoSimplesNacionalParser) Parse(filename string) (*Statement, error) {
 	// Abre o PDF
 	f, r, err := pdf.Open(filename)
 	if err != nil {
@@ -46,7 +47,7 @@ func (p *DasSimplesNacionalParser) Parse(filename string) (*Statement, error) {
 	defer f.Close()
 
 	stmt := &Statement{
-		AccountNumber: "das-simples-nacional", // Identificador especial para Simples Nacional
+		AccountNumber: "extrato-simples-nacional", // Identificador especial para Extrato Simples Nacional
 		Transactions:  []Transaction{},
 	}
 
@@ -84,25 +85,32 @@ func (p *DasSimplesNacionalParser) Parse(filename string) (*Statement, error) {
 }
 
 // extractDASTransactions extrai transações do texto do DAS
-func (p *DasSimplesNacionalParser) extractDASTransactions(texto string) (DasDocumento, error) {
+func (p *ExtratoSimplesNacionalParser) extractDASTransactions(texto string) (DasDocumento, error) {
 	var out DasDocumento
+
+	os.WriteFile("conteudo.txt", []byte(texto), 0644)
+
+	conteudo := cutAfterCaseInsensitive(texto, "principal")
+	if conteudo == "" {
+		conteudo = texto
+	}
 
 	// Padrões regex para extrair informações do DAS
 	// Expressões regulares específicas para cada informação
-	cnpjRegex := regexp.MustCompile(`\d{2}\.\d{3}\.\d{3}/\d{4}-\d{2}`)
-	numeroDocRegex := regexp.MustCompile(`\d{2}\.\d{2}\.\d{5}\.\d{7}-\d{1}`)
-	periodoRegex := regexp.MustCompile(`([A-ZÇ][a-zç]+/[0-9]{4})`) // ex: Outubro/2025
-	vencimentoRegex := regexp.MustCompile(`(\d{2}/\d{2}/\d{4})`)
-	valorRegex := regexp.MustCompile(`(\d{1,3}(?:\.\d{3})*,\d{2})`)
+	cnpjRegex := regexp.MustCompile(`(\d{2}\.\d{3}\.\d{3}/\d{4}-\d{2})`)
+	numeroDocRegex := regexp.MustCompile(`(?i)Número\s*[:\s]*(\d{17})`)
+	periodoRegex := regexp.MustCompile(`(?i)Período\s*de\s*Apuração\s*\(PA\)\s*[:\s]*([0-9]{2}/[0-9]{4})`)
+	vencimentoRegex := regexp.MustCompile(`(?i)Data\s*de\s*Vencimento\s*[:\s]*([0-9]{2}/[0-9]{2}/[0-9]{4})`)
+	valorRegex := regexp.MustCompile(`(?i)Total\s*[:\s]*([\d.,]+)`)
 
 	// Extrair os valores
-	cnpj := cnpjRegex.FindString(texto)
-	numeroDocumento := numeroDocRegex.FindString(texto)
-	periodoStr := periodoRegex.FindString(texto)
-	vencimentoStr := vencimentoRegex.FindString(texto)
-	valorStr := valorRegex.FindString(texto)
+	cnpj := match1(cnpjRegex, texto)
+	numeroDocumento := match1(numeroDocRegex, texto)
+	periodoStr := match1(periodoRegex, texto)
+	vencimentoStr := match1(vencimentoRegex, texto)
+	valorStr := match1(valorRegex, conteudo)
 
-	periodo, err := p.parser.ParsePeriodoPT(periodoStr) // 1º dia do mês
+	periodo, err := p.parser.ParsePeriodoNum(strings.TrimSpace(periodoStr)) // 1º dia do mês
 	if err != nil {
 		return out, fmt.Errorf("periodo_apuracao inválido (%q): %w", periodoStr, err)
 	}
@@ -124,4 +132,23 @@ func (p *DasSimplesNacionalParser) extractDASTransactions(texto string) (DasDocu
 	out.ValorTotal = valor
 
 	return out, nil
+}
+
+func cutAfterCaseInsensitive(haystack, needle string) string {
+	hl := strings.ToLower(haystack)
+	nl := strings.ToLower(needle)
+	idx := strings.Index(hl, nl)
+	if idx == -1 {
+		return ""
+	}
+	// avança o comprimento do 'needle' na string original (mesmo offset)
+	return haystack[idx+len(needle):]
+}
+
+func match1(re *regexp.Regexp, s string) string {
+	m := re.FindStringSubmatch(s)
+	if len(m) > 1 {
+		return strings.TrimSpace(m[1])
+	}
+	return ""
 }

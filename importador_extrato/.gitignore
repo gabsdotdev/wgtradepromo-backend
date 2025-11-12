@@ -44,3 +44,6 @@ go.work.sum
 *.bin
 *.binary
 *.db
+
+# Debug files
+__debug_bin*

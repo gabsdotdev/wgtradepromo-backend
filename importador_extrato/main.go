@@ -78,7 +78,8 @@ func main() {
 		var fileImported, fileSkipped int
 
 		switch stmt.AccountNumber {
-		case "simples-nacional":
+		case "das-simples-nacional":
+		case "extrato-simples-nacional":
 			// Get conta ID from database
 			empresaID, err := database.GetEmpresaIDByCNPJ(stmt.DasDocumento.CNPJ)
 			if err != nil {

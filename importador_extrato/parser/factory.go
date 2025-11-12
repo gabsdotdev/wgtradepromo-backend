@@ -17,6 +17,7 @@ func NewParserFactory() *ParserFactory {
 			NewInterParser(),
 			NewNubankParser(),
 			NewDasSimplesNacionalParser(),
+			NewExtratoSimplesNacionalParser(),
 		},
 	}
 }
