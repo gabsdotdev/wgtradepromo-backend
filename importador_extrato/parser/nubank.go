@@ -74,9 +74,8 @@ func (p *NubankParser) Parse(filename string) (*Statement, error) {
 			return nil, fmt.Errorf("error reading transaction: %v", err)
 		}
 
-		// Este é um formato exemplo - ajustar quando tiver arquivo real
-		// Formato esperado: Data, Descrição, Valor
-		if len(record) < 3 {
+		// Formato do CSV do Nubank: Data, Valor, Identificador, Descrição
+		if len(record) < 4 {
 			continue
 		}
 
@@ -86,12 +85,17 @@ func (p *NubankParser) Parse(filename string) (*Statement, error) {
 			continue
 		}
 
-		amount := parseNubankAmount(record[2])
+		amount := parseNubankAmount(record[1])
+		identifier := strings.TrimSpace(record[2])
+		fullDescription := strings.TrimSpace(record[3])
+
+		// Extrai título e detalhes da descrição
+		description, details := extractNubankDescriptionAndDetails(fullDescription)
 
 		transaction := Transaction{
 			Date:        date,
-			Description: strings.TrimSpace(record[1]),
-			Details:     "", // Ajustar se houver campo de detalhes
+			Description: description,
+			Details:     fmt.Sprintf("ID: %s | %s", identifier, details),
 			Amount:      amount,
 		}
 		stmt.Transactions = append(stmt.Transactions, transaction)
@@ -141,11 +145,33 @@ func parseNubankAmount(amountStr string) float64 {
 // extractAccountFromFilename extrai o número da conta do nome do arquivo
 func extractAccountFromFilename(filename string) string {
 	// Tenta extrair um padrão de conta do nome do arquivo
-	// Ex: nubank-123456-2024.csv -> 123456
+	// Ex: NU_6115932263_13JAN2025_12NOV2025.csv -> 6115932263
 	base := filepath.Base(filename)
-	parts := strings.Split(base, "-")
-	if len(parts) > 1 {
+	parts := strings.Split(base, "_")
+	if len(parts) >= 2 {
 		return parts[1]
 	}
 	return "nubank-default"
+}
+
+// extractNubankDescriptionAndDetails extrai título e detalhes da descrição do Nubank
+func extractNubankDescriptionAndDetails(fullDescription string) (string, string) {
+	// Padrões comuns de descrição do Nubank:
+	// "Transferência recebida pelo Pix - NOME - CPF/CNPJ - BANCO (CODIGO) Agência: X Conta: Y"
+	// "Transferência enviada pelo Pix - NOME - CPF/CNPJ - BANCO (CODIGO) Agência: X Conta: Y"
+	// "Pagamento - ESTABELECIMENTO"
+	// etc.
+
+	// Separa pelo primeiro hífen para extrair o tipo de transação
+	parts := strings.SplitN(fullDescription, " - ", 2)
+
+	if len(parts) < 2 {
+		// Se não houver hífen, usa a descrição completa como título
+		return fullDescription, ""
+	}
+
+	transactionType := strings.TrimSpace(parts[0])
+	remainingInfo := strings.TrimSpace(parts[1])
+
+	return transactionType, remainingInfo
 }
